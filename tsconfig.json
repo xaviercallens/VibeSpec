@@ -26,5 +26,5 @@
     { "path": "packages/rl-validator" },
     { "path": "packages/cli" }
   ],
-  "exclude": ["node_modules", "dist", "tests", "vitest.config.ts"]
+  "exclude": ["node_modules", "dist", "tests", "vitest.config.ts", "deploy"]
 }
