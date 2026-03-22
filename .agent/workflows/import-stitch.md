@@ -1,39 +1,12 @@
 ---
 description: Import a Google Stitch project and run the full VibeSpec pipeline
 ---
+This workflow handles the ingestion and parsing phase of a Google Stitch export, converting raw design data into actionable ASTs and machine configurations.
 
-# Import Stitch Project
-
-Run this workflow when importing a Google Stitch project (`.zip` export or URL).
-
-## Steps
-
-1. Place the Stitch export in the workspace root:
-   ```bash
-   # Option A: Unzip the Stitch export
-   unzip stitch-export.zip -d ./stitch-project
-
-   # Option B: Keep the .zip (VibeSpec extracts automatically)
-   cp ~/Downloads/stitch-export.zip ./
-   ```
-
-2. Run the VibeSpec pipeline in Stitch mode:
-   ```bash
-   npx vibespec run --input ./stitch-project --output ./vibespec-output
-   ```
-
-3. The pipeline auto-detects Stitch projects (via `DESIGN.md` or `flow.json`) and runs:
-   - **Phase 1:** Parse `DESIGN.md` tokens, `flow.json` transitions, React components
-   - **Phase 2:** Generate EARS constraints, XState machines, TLA+ invariants
-   - **Phase 3:** Replace `stitch-placeholder` tags with Banana-generated assets
-   - **Phase 4:** Deploy via Antigravity with constraint-driven routing
-   - **Phase 5:** RL validation + Z3/TLA+ formal proof
-
-4. Review generated outputs in `./vibespec-output/`:
-   - `tailwind.config.ts` — exact design tokens from DESIGN.md
-   - `design-tokens.smt2` — Z3 algebraic constraints
-   - `constraints.ears` — EARS requirements
-   - `formal_proof.tla` — TLA+ proof certificate
-   - `proof-certificate.json` — verification summary
-
-5. If violations are found, the self-healing loop (DeepSeek V3.2) patches the code automatically.
+1. Unzip the Google Stitch export to the temporary `/workspace/.stitch-raw/` directory.
+// turbo
+2. Execute the `stitch-parser` skill (`python .agent/skills/stitch-parser/stitch_parser.py --input /workspace/.stitch-raw/DESIGN.md`) to generate a strict, schema-validated `tailwind.config.ts`.
+// turbo
+3. Parse the Stitch `flow.json` artifact using the Logic-Mapper logic.
+// turbo
+4. Generate the XState routing map (`app-machine.ts`) based on the structural flow to ensure mathematically verifiable transition states.
