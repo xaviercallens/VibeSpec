@@ -1,0 +1,88 @@
+# DeepSeek V3.2 Model Serving — GKE Deployment
+# Requires 2× NVIDIA A100 80GB GPUs
+# Estimated cost: $6.52/hr (Spot) or $14.68/hr (On-Demand)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: deepseek
+  namespace: vibespec
+  labels:
+    app: deepseek
+    component: model-server
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: deepseek
+  template:
+    metadata:
+      labels:
+        app: deepseek
+    spec:
+      nodeSelector:
+        cloud.google.com/gke-accelerator: nvidia-tesla-a100
+      containers:
+        - name: vllm
+          image: us-central1-docker.pkg.dev/PROJECT_ID/vibespec/deepseek:latest
+          ports:
+            - containerPort: 8000
+              name: http
+          resources:
+            requests:
+              cpu: "8"
+              memory: "64Gi"
+              nvidia.com/gpu: "2"
+            limits:
+              cpu: "16"
+              memory: "128Gi"
+              nvidia.com/gpu: "2"
+          env:
+            - name: HF_HOME
+              value: /models
+          volumeMounts:
+            - name: model-cache
+              mountPath: /models
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 180
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 240
+            periodSeconds: 30
+      volumes:
+        - name: model-cache
+          persistentVolumeClaim:
+            claimName: deepseek-models
+      terminationGracePeriodSeconds: 60
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: deepseek
+  namespace: vibespec
+spec:
+  selector:
+    app: deepseek
+  ports:
+    - port: 8000
+      targetPort: 8000
+      name: http
+  type: ClusterIP
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: deepseek-models
+  namespace: vibespec
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 300Gi
+  storageClassName: premium-rwo

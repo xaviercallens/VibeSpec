@@ -1,0 +1,22 @@
+# DeepSeek V3.2 Model Server
+# Serves the code repair model via vLLM
+# Deployment: GKE with GPU (NVIDIA A100 × 2)
+
+FROM vllm/vllm-openai:latest
+
+ENV MODEL_NAME="deepseek-ai/DeepSeek-V3.2"
+ENV MAX_MODEL_LEN=8192
+ENV TENSOR_PARALLEL_SIZE=2
+ENV GPU_MEMORY_UTILIZATION=0.9
+
+EXPOSE 8000
+
+ENTRYPOINT ["python3", "-m", "vllm.entrypoints.openai.api_server"]
+CMD ["--model", "deepseek-ai/DeepSeek-V3.2", \
+     "--tensor-parallel-size", "2", \
+     "--max-model-len", "8192", \
+     "--gpu-memory-utilization", "0.9", \
+     "--trust-remote-code", \
+     "--dtype", "auto", \
+     "--host", "0.0.0.0", \
+     "--port", "8000"]

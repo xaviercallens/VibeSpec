@@ -1,0 +1,75 @@
+steps:
+  # ─── Build Pipeline Container ────────────────────────────────────
+  - id: 'build-pipeline'
+    name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '-t'
+      - '${_REGION}-docker.pkg.dev/${PROJECT_ID}/vibespec/pipeline:${SHORT_SHA}'
+      - '-t'
+      - '${_REGION}-docker.pkg.dev/${PROJECT_ID}/vibespec/pipeline:latest'
+      - '-f'
+      - 'deploy/Dockerfile'
+      - '.'
+
+  # ─── Build Qwen VL Container ────────────────────────────────────
+  - id: 'build-qwen-vl'
+    name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '-t'
+      - '${_REGION}-docker.pkg.dev/${PROJECT_ID}/vibespec/qwen-vl:${SHORT_SHA}'
+      - '-t'
+      - '${_REGION}-docker.pkg.dev/${PROJECT_ID}/vibespec/qwen-vl:latest'
+      - '-f'
+      - 'deploy/Dockerfile.qwen-vl'
+      - '.'
+    waitFor: ['-']
+
+  # ─── Build DeepSeek Container ───────────────────────────────────
+  - id: 'build-deepseek'
+    name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '-t'
+      - '${_REGION}-docker.pkg.dev/${PROJECT_ID}/vibespec/deepseek:${SHORT_SHA}'
+      - '-t'
+      - '${_REGION}-docker.pkg.dev/${PROJECT_ID}/vibespec/deepseek:latest'
+      - '-f'
+      - 'deploy/Dockerfile.deepseek'
+      - '.'
+    waitFor: ['-']
+
+  # ─── Push Images ────────────────────────────────────────────────
+  - id: 'push-images'
+    name: 'gcr.io/cloud-builders/docker'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        docker push ${_REGION}-docker.pkg.dev/${PROJECT_ID}/vibespec/pipeline:${SHORT_SHA}
+        docker push ${_REGION}-docker.pkg.dev/${PROJECT_ID}/vibespec/pipeline:latest
+        docker push ${_REGION}-docker.pkg.dev/${PROJECT_ID}/vibespec/qwen-vl:${SHORT_SHA}
+        docker push ${_REGION}-docker.pkg.dev/${PROJECT_ID}/vibespec/qwen-vl:latest
+        docker push ${_REGION}-docker.pkg.dev/${PROJECT_ID}/vibespec/deepseek:${SHORT_SHA}
+        docker push ${_REGION}-docker.pkg.dev/${PROJECT_ID}/vibespec/deepseek:latest
+    waitFor: ['build-pipeline', 'build-qwen-vl', 'build-deepseek']
+
+  # ─── Deploy to GKE ─────────────────────────────────────────────
+  - id: 'deploy-gke'
+    name: 'gcr.io/cloud-builders/gke-deploy'
+    args:
+      - 'run'
+      - '--filename=deploy/k8s/'
+      - '--location=${_REGION}'
+      - '--cluster=vibespec-production'
+    waitFor: ['push-images']
+
+substitutions:
+  _REGION: us-central1
+
+options:
+  machineType: 'E2_HIGHCPU_8'
+  logging: CLOUD_LOGGING_ONLY
+
+timeout: '1800s'
