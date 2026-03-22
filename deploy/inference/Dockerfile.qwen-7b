@@ -1,0 +1,26 @@
+# Qwen2.5-VL-7B-Instruct — Inference-Optimized Container
+# Uses the 7B parameter version (not 72B) for cost-optimal inference
+# Fits on a single NVIDIA L4 24GB GPU with INT4 quantization
+#
+# Download size: ~4.5 GB (AWQ quantized)
+# VRAM usage: ~8 GB (INT4) or ~16 GB (FP16)
+# Latency: ~200ms per inference
+
+FROM vllm/vllm-openai:latest
+
+# Use the 7B model (not 72B) with AWQ quantization for single-GPU inference
+ENV MODEL_NAME="Qwen/Qwen2.5-VL-7B-Instruct-AWQ"
+ENV MAX_MODEL_LEN=4096
+ENV GPU_MEMORY_UTILIZATION=0.85
+
+EXPOSE 8000
+
+ENTRYPOINT ["python3", "-m", "vllm.entrypoints.openai.api_server"]
+CMD ["--model", "Qwen/Qwen2.5-VL-7B-Instruct-AWQ", \
+     "--max-model-len", "4096", \
+     "--gpu-memory-utilization", "0.85", \
+     "--quantization", "awq", \
+     "--trust-remote-code", \
+     "--dtype", "half", \
+     "--host", "0.0.0.0", \
+     "--port", "8000"]

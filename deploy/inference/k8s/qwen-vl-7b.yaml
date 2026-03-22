@@ -1,0 +1,98 @@
+# Qwen2.5-VL-7B Inference — GKE Deployment (Cost-Optimal)
+# Uses AWQ-quantized 7B model on single L4 GPU (Spot)
+# Cost: $0.56/hr (Spot) or $1.64/hr (On-Demand)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: qwen-vl-7b
+  namespace: vibespec
+  labels:
+    app: qwen-vl-7b
+    tier: inference
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: qwen-vl-7b
+  template:
+    metadata:
+      labels:
+        app: qwen-vl-7b
+    spec:
+      # Use Spot pods for 65% discount
+      nodeSelector:
+        cloud.google.com/gke-accelerator: nvidia-l4
+        cloud.google.com/gke-spot: "true"
+      tolerations:
+        - key: cloud.google.com/gke-spot
+          operator: Equal
+          value: "true"
+          effect: NoSchedule
+      containers:
+        - name: vllm
+          image: REGION-docker.pkg.dev/PROJECT_ID/vibespec/qwen-vl-7b:v1
+          ports:
+            - containerPort: 8000
+              name: http
+          resources:
+            requests:
+              cpu: "4"
+              memory: "16Gi"
+              nvidia.com/gpu: "1"
+            limits:
+              cpu: "8"
+              memory: "24Gi"
+              nvidia.com/gpu: "1"
+          env:
+            - name: HF_HOME
+              value: /models
+            - name: TRANSFORMERS_CACHE
+              value: /models
+          volumeMounts:
+            - name: model-cache
+              mountPath: /models
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 60
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 90
+            periodSeconds: 30
+      volumes:
+        - name: model-cache
+          persistentVolumeClaim:
+            claimName: qwen-vl-7b-cache
+      terminationGracePeriodSeconds: 30
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: qwen-vl
+  namespace: vibespec
+spec:
+  selector:
+    app: qwen-vl-7b
+  ports:
+    - port: 8000
+      targetPort: 8000
+      name: http
+  type: ClusterIP
+---
+# 50 GB PVC — holds the 4.5 GB AWQ model + HF cache
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: qwen-vl-7b-cache
+  namespace: vibespec
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 50Gi
+  storageClassName: standard-rwo

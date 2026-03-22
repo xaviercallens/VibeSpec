@@ -1,0 +1,66 @@
+# VibeSpec Pipeline Runner — GKE Deployment (CPU-only)
+# Runs: Z3, Scallop, axe-core, Playwright, pipeline orchestration
+# No GPU needed — these are all CPU workloads
+# Cost: $0.07/hr (Spot)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pipeline
+  namespace: vibespec
+  labels:
+    app: pipeline
+    tier: inference
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: pipeline
+  template:
+    metadata:
+      labels:
+        app: pipeline
+    spec:
+      nodeSelector:
+        cloud.google.com/gke-spot: "true"
+      tolerations:
+        - key: cloud.google.com/gke-spot
+          operator: Equal
+          value: "true"
+          effect: NoSchedule
+      containers:
+        - name: pipeline
+          image: REGION-docker.pkg.dev/PROJECT_ID/vibespec/pipeline:v1
+          command: ["sleep", "infinity"]    # Keep alive for kubectl exec
+          resources:
+            requests:
+              cpu: "2"
+              memory: "4Gi"
+            limits:
+              cpu: "4"
+              memory: "8Gi"
+          env:
+            - name: QWEN_VL_ENDPOINT
+              value: "http://qwen-vl.vibespec.svc.cluster.local:8000/v1"
+            - name: DEEPSEEK_ENDPOINT
+              value: ""   # Uses rule-based fallback (no GPU cost)
+          volumeMounts:
+            - name: workspace
+              mountPath: /data
+      volumes:
+        - name: workspace
+          emptyDir:
+            sizeLimit: 10Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: pipeline
+  namespace: vibespec
+spec:
+  selector:
+    app: pipeline
+  ports:
+    - port: 3000
+      targetPort: 3000
+      name: http
+  type: ClusterIP
