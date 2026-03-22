@@ -201,6 +201,20 @@ Full cost model in [`specs/gcp_deployment_cost_model.md`](specs/gcp_deployment_c
 
 **Per-run:** $0.02 (CI simulation) → $3.50 (full GPU pipeline)
 
+## Pricing & Subscriptions (PLG Model)
+
+VibeSpec uses a 5-tier Product-Led Growth model perfectly balancing zero-friction discovery with enterprise scale:
+
+| Tier | Target Audience | Features & Quotas | Price |
+|------|-----------------|-------------------|-------|
+| **0. Glasshouse Demo** | Skeptical Devs / PMs | Read-only pre-computed examples | **Free** |
+| **1. One-Shot Discovery** | Curious Teams | **30-Min Burst.** Max 3 screens. Partial proofs | **$19** *(One-off)* |
+| **2. Agile Pro** | Startups / Boutiques | **4x 24-Hour Calendar Sprints / mo.** Full RL | **$1,000 / mo** |
+| **3. Studio Scale**| Mid-Market Agencies | **10x 24-Hour Sprints / mo.** Parallel execution| **$2,500 / mo** |
+| **4. Enterprise Factory**| Large Orgs / CI/CD | **20x 24-Hour Sprints / mo.** Priority queuing | **$5,000 / mo** |
+
+*Note: The One-Shot Discovery token runs at a 50% fixed gross margin, with the $19 fee fully credited toward a monthly subscription upgrade.*
+
 ---
 
 ## Testing

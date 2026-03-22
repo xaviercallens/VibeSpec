@@ -53,6 +53,67 @@ export interface TimeSlot {
   booking?: BookingWindow;
 }
 
+export type SubscriptionTier = 'Glasshouse' | 'OneShot' | 'AgilePro' | 'StudioScale' | 'EnterpriseFactory';
+
+export interface SubscriptionPlan {
+  name: string;
+  price: number;
+  maxSprintsPerMonth: number;
+  maxDurationMinutes: number; // per sprint
+  maxScreens: number;
+}
+
+export const SUBSCRIPTION_TIERS: Record<SubscriptionTier, SubscriptionPlan> = {
+  Glasshouse: { name: 'Glasshouse Demo', price: 0, maxSprintsPerMonth: 0, maxDurationMinutes: 0, maxScreens: 0 },
+  OneShot: { name: 'One-Shot Discovery', price: 19, maxSprintsPerMonth: 1, maxDurationMinutes: 30, maxScreens: 3 },
+  AgilePro: { name: 'Agile Pro', price: 1000, maxSprintsPerMonth: 4, maxDurationMinutes: 24 * 60, maxScreens: 999 },
+  StudioScale: { name: 'Studio Scale', price: 2500, maxSprintsPerMonth: 10, maxDurationMinutes: 24 * 60, maxScreens: 999 },
+  EnterpriseFactory: { name: 'Enterprise Factory', price: 5000, maxSprintsPerMonth: 20, maxDurationMinutes: 24 * 60, maxScreens: 999 },
+};
+
+export class QuotaManager {
+  // Mock database mapping userId to their subscription tier and current month's usage
+  private userSubscriptions = new Map<string, { tier: SubscriptionTier; sprintsUsedThisMonth: number }>();
+
+  setSubscription(userId: string, tier: SubscriptionTier) {
+    this.userSubscriptions.set(userId, { tier, sprintsUsedThisMonth: 0 });
+  }
+
+  getSubscription(userId: string) {
+    return this.userSubscriptions.get(userId) || { tier: 'Glasshouse' as SubscriptionTier, sprintsUsedThisMonth: 0 };
+  }
+
+  canBook(userId: string, durationMinutes: number, screens: number = 1): boolean {
+    const sub = this.getSubscription(userId);
+    const plan = SUBSCRIPTION_TIERS[sub.tier];
+
+    if (sub.tier === 'Glasshouse') {
+      throw new Error(`Glasshouse tier is read-only. Upgrade to One-Shot Discovery or higher to run the pipeline.`);
+    }
+
+    if (screens > plan.maxScreens) {
+      throw new Error(`Your ${plan.name} plan allows a maximum of ${plan.maxScreens} screens per run. Requested: ${screens}.`);
+    }
+
+    if (durationMinutes > plan.maxDurationMinutes) {
+      throw new Error(`Your ${plan.name} plan allows a maximum duration of ${plan.maxDurationMinutes} minutes per sprint.`);
+    }
+
+    if (sub.sprintsUsedThisMonth >= plan.maxSprintsPerMonth) {
+      throw new Error(`Monthly quota exhausted for ${plan.name} plan (${plan.maxSprintsPerMonth} sprints).`);
+    }
+
+    return true;
+  }
+
+  incrementUsage(userId: string) {
+    const sub = this.userSubscriptions.get(userId);
+    if (sub) {
+      sub.sprintsUsedThisMonth += 1;
+    }
+  }
+}
+
 /** GPU tier definitions with cost. */
 export const GPU_TIERS = {
   minimal: {
@@ -83,6 +144,7 @@ export const GPU_TIERS = {
 
 export class GPUScheduler {
   private bookings = new Map<string, BookingWindow>();
+  public quotaManager = new QuotaManager();
 
   /**
    * Book a GPU window.
@@ -91,14 +153,20 @@ export class GPUScheduler {
    * @param startTime  When the window starts (ISO 8601)
    * @param durationMinutes  How long to keep GPUs alive
    * @param tier       GPU tier (minimal, standard, full)
+   * @param screens    Number of screens in the project (for quota check)
    * @returns BookingWindow with estimated cost
    */
   async book(
     userId: string,
     startTime: string,
     durationMinutes: number,
-    tier: keyof typeof GPU_TIERS = 'minimal'
+    tier: keyof typeof GPU_TIERS = 'minimal',
+    screens: number = 1
   ): Promise<BookingWindow> {
+    // Validate subscription quota
+    this.quotaManager.canBook(userId, durationMinutes, screens);
+    this.quotaManager.incrementUsage(userId);
+
     const tierConfig = GPU_TIERS[tier];
     const start = new Date(startTime);
     const end = new Date(start.getTime() + durationMinutes * 60 * 1000);

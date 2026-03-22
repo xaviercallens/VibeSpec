@@ -16,6 +16,7 @@ import { readFileSync } from 'node:fs';
 import { resolve, dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { VibeSpecPipeline } from './pipeline.js';
+import { GPUScheduler, SUBSCRIPTION_TIERS } from './gpu-scheduler.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -33,6 +34,8 @@ COMMANDS:
   deploy    Phase 4: Deploy to Google Antigravity
   verify    Phase 5: Validate with RL agent + formal proofs
   init      Initialize a new VibeSpec project
+  account   View your subscription tier and PLG usage quotas
+  schedule  Book a GPU execution window
 
 OPTIONS:
   --input <path>       Input path (zip, directory, or image)
@@ -76,8 +79,35 @@ async function main(): Promise<void> {
   const framework = (fwIdx !== -1 ? args[fwIdx + 1] : 'nextjs') as 'nextjs' | 'react' | 'svelte';
 
   const pipeline = new VibeSpecPipeline();
+  const scheduler = new GPUScheduler();
+  
+  // Mock authentication for demonstrating PLG quotas
+  const mockUserId = 'user-1';
+  scheduler.quotaManager.setSubscription(mockUserId, 'OneShot');
 
   switch (command) {
+    case 'account': {
+      const sub = scheduler.quotaManager.getSubscription(mockUserId);
+      const plan = SUBSCRIPTION_TIERS[sub.tier];
+      console.log(`\\n=== VibeSpec Account (${mockUserId}) ===`);
+      console.log(`Plan: ${plan.name} ($${plan.price})`);
+      console.log(`Usage: ${sub.sprintsUsedThisMonth} / ${plan.maxSprintsPerMonth} sprints used this month`);
+      console.log(`Limits: Max ${plan.maxDurationMinutes} min/sprint, Max ${plan.maxScreens} screens\\n`);
+      break;
+    }
+
+    case 'schedule': {
+      console.log(`Attempting to book a 30-minute sprint for 3 screens parameters...`);
+      try {
+        const booking = await scheduler.book(mockUserId, new Date().toISOString(), 30, 'minimal', 3);
+        console.log(`\\n✅ Successfully scheduled! Booking ID: ${booking.id}`);
+        console.log(`Estimated Cost: $${booking.estimatedCost}`);
+      } catch (err: any) {
+        console.error(`\\n❌ Scheduling failed: ${err.message}`);
+      }
+      break;
+    }
+
     case 'run':
       if (!input) {
         console.error('Error: --input is required for the "run" command.');
