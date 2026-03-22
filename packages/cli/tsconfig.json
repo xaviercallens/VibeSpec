@@ -1,0 +1,13 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": { "outDir": "dist", "rootDir": "src" },
+  "include": ["src"],
+  "references": [
+    { "path": "../schemas" },
+    { "path": "../ingestion" },
+    { "path": "../neuro-sym" },
+    { "path": "../banana-gen" },
+    { "path": "../antigravity-bridge" },
+    { "path": "../rl-validator" }
+  ]
+}

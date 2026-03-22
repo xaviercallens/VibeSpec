@@ -1,0 +1,41 @@
+{
+  "name": "vibespec",
+  "version": "0.1.0",
+  "private": true,
+  "description": "The Vibe-to-Spec pipeline for autonomous front-end engineering",
+  "type": "module",
+  "scripts": {
+    "build": "pnpm -r build",
+    "test": "pnpm -r test",
+    "test:unit": "vitest run --project unit",
+    "test:integration": "vitest run --project integration",
+    "test:e2e": "vitest run --project e2e",
+    "lint": "eslint packages/*/src/**/*.ts",
+    "format": "prettier --write 'packages/*/src/**/*.ts'",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "keywords": [
+    "vibespec",
+    "neuro-symbolic",
+    "formal-verification",
+    "code-generation"
+  ],
+  "license": "MIT",
+  "engines": {
+    "node": ">=20"
+  },
+  "devDependencies": {
+    "@types/node": "^25.5.0",
+    "eslint": "^10.1.0",
+    "prettier": "^3.8.1",
+    "typescript": "^5.9.3",
+    "vitest": "^4.1.0"
+  },
+  "dependencies": {
+    "@axe-core/playwright": "^4.11.1",
+    "commander": "^14.0.3",
+    "playwright": "^1.58.2",
+    "sharp": "^0.34.5",
+    "svgo": "^4.0.1"
+  }
+}

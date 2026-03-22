@@ -1,0 +1,30 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "lib": ["ES2022"],
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "outDir": "dist",
+    "rootDir": "src",
+    "composite": true,
+    "incremental": true
+  },
+  "references": [
+    { "path": "packages/schemas" },
+    { "path": "packages/ingestion" },
+    { "path": "packages/neuro-sym" },
+    { "path": "packages/banana-gen" },
+    { "path": "packages/antigravity-bridge" },
+    { "path": "packages/rl-validator" },
+    { "path": "packages/cli" }
+  ],
+  "exclude": ["node_modules", "dist", "tests", "vitest.config.ts"]
+}
