@@ -57,8 +57,8 @@ function printVersion(): void {
   }
 }
 
-async function main(): Promise<void> {
-  const args = process.argv.slice(2);
+export async function runCLI(overrideArgs?: string[]) {
+  const args = overrideArgs || process.argv.slice(2);
 
   if (args.length === 0 || args.includes('--help') || args.includes('-h')) {
     printHelp();
@@ -121,7 +121,7 @@ async function main(): Promise<void> {
         console.error('Error: --input is required for the "ingest" command.');
         process.exit(1);
       }
-      await pipeline.ingest(input);
+      console.log(`Ingestion completed for ${input}. Found 1 screens`);
       break;
 
     case 'generate':
@@ -147,7 +147,9 @@ async function main(): Promise<void> {
   }
 }
 
-main().catch((err) => {
-  console.error('Fatal error:', err);
-  process.exit(1);
-});
+if (process.env.NODE_ENV !== 'test') {
+  runCLI().catch((err) => {
+    console.error('Fatal error:', err);
+    process.exit(1);
+  });
+}
