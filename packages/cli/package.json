@@ -1,0 +1,20 @@
+{
+  "name": "@vibespec/cli",
+  "version": "0.1.0",
+  "type": "module",
+  "bin": { "vibespec": "dist/cli.js" },
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@vibespec/schemas": "workspace:*",
+    "@vibespec/ingestion": "workspace:*",
+    "@vibespec/neuro-sym": "workspace:*",
+    "@vibespec/banana-gen": "workspace:*",
+    "@vibespec/antigravity-bridge": "workspace:*",
+    "@vibespec/rl-validator": "workspace:*"
+  }
+}

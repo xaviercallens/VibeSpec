@@ -1,0 +1,12 @@
+node_modules/
+dist/
+*.tsbuildinfo
+.env
+.env.*
+!.env.example
+coverage/
+vibespec-output/
+vitest.config.d.ts
+vitest.config.d.ts.map
+vitest.config.js
+vitest.config.js.map
