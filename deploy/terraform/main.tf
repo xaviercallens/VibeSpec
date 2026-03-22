@@ -208,6 +208,48 @@ resource "google_cloudbuild_trigger" "vibespec_ci" {
   depends_on = [google_project_service.apis]
 }
 
+# ─── Cloud Run Service (Web Portal) ───────────────────────────────
+
+resource "google_cloud_run_v2_service" "web_portal" {
+  name     = "vibespec-web"
+  location = var.region
+  ingress  = "INGRESS_TRAFFIC_ALL"
+
+  template {
+    containers {
+      image = "${var.region}-docker.pkg.dev/${var.project_id}/vibespec/web:latest"
+      
+      resources {
+        limits = {
+          cpu    = "2"
+          memory = "1Gi"
+        }
+      }
+      
+      ports {
+        container_port = 3000
+      }
+    }
+    
+    # Scale to zero automatically
+    scaling {
+      min_instance_count = 0
+      max_instance_count = 100
+    }
+  }
+
+  depends_on = [google_project_service.apis]
+}
+
+# Allow unauthenticated access to the Web Portal (Public Traffic)
+resource "google_cloud_run_service_iam_member" "web_portal_public" {
+  location = google_cloud_run_v2_service.web_portal.location
+  project  = google_cloud_run_v2_service.web_portal.project
+  service  = google_cloud_run_v2_service.web_portal.name
+  role     = "roles/run.invoker"
+  member   = "allUsers"
+}
+
 # ─── Outputs ──────────────────────────────────────────────────────
 
 output "cluster_name" {
@@ -224,4 +266,8 @@ output "model_bucket" {
 
 output "pipeline_io_bucket" {
   value = google_storage_bucket.pipeline_io.name
+}
+
+output "web_portal_url" {
+  value = google_cloud_run_v2_service.web_portal.uri
 }
